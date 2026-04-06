@@ -1,0 +1,12 @@
+node_modules/
+.claude/
+__pycache__/
+*.pyc
+scrape_queue.json
+scrape_log.json
+SWC_CRM.xlsx
+*.pptx
+*.csv
+tracker_export.tsv
+crm_updates/
+.git/

@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWC Command Center</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #F5F0EB;
+    --card: #FFFFFF;
+    --text: #2D2D2D;
+    --text-muted: #8B7B6B;
+    --beige: #C8B89A;
+    --beige-light: #E8DFD0;
+    --accent: #3D3D3D;
+    --green: #4CAF50;
+    --red: #E57373;
+    --orange: #FFB74D;
+    --blue: #64B5F6;
+    --purple: #BA68C8;
+    --hot: #FF6B6B;
+    --warm: #FFB74D;
+    --cool: #64B5F6;
+    --cold: #90A4AE;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* Top Bar */
+  .topbar {
+    background: var(--accent);
+    color: white;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar h1 { font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+  .topbar-right { display: flex; align-items: center; gap: 16px; font-size: 13px; }
+  .topbar-right .status { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot.green { background: var(--green); }
+  .dot.orange { background: var(--orange); }
+  .dot.red { background: var(--red); }
+  .user-badge {
+    background: rgba(255,255,255,0.15);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .logout-btn {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .logout-btn:hover { background: rgba(255,255,255,0.1); }
+
+  /* Layout */
+  .container { max-width: 1440px; margin: 0 auto; padding: 20px; }
+
+  /* Nav Tabs */
+  .nav-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--card);
+    border-radius: 12px 12px 0 0;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+    overflow-x: auto;
+  }
+  .nav-tab {
+    padding: 14px 22px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .nav-tab:hover { color: var(--text); background: rgba(0,0,0,0.02); }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(0,0,0,0.02); }
+  .nav-tab.highlight { color: var(--green); }
+
+  /* Views */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .card-header {
+    background: var(--beige);
+    padding: 14px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-body { padding: 20px; }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  /* KPI Cards */
+  .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 20px; }
+  .kpi-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: var(--shadow);
+    text-align: center;
+  }
+  .kpi-card .label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px; }
+  .kpi-card .value { font-size: 28px; font-weight: 800; line-height: 1; }
+  .kpi-card .sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* Toggle Switch */
+  .toggle { position: relative; width: 44px; height: 24px; cursor: pointer; display: inline-block; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle .slider {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: #ccc; border-radius: 24px; transition: 0.3s;
+  }
+  .toggle .slider:before {
+    content: ''; position: absolute; height: 18px; width: 18px;
+    left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s;
+  }
+  .toggle input:checked + .slider { background: var(--green); }
+  .toggle input:checked + .slider:before { transform: translateX(20px); }
+
+  /* Agent Row */
+  .agent-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0; border-bottom: 1px solid var(--beige-light);
+  }
+  .agent-row:last-child { border-bottom: none; }
+  .agent-info { flex: 1; }
+  .agent-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+  .agent-desc { font-size: 12px; color: var(--text-muted); }
+  .agent-controls { display: flex; align-items: center; gap: 16px; }
+  .agent-badge {
+    padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;
+  }
+  .agent-badge.on { background: #E8F5E9; color: #2E7D32; }
+  .agent-badge.off { background: #ECEFF1; color: #546E7A; }
+
+  /* DM Draft Cards */
+  .draft-card {
+    background: white;
+    border: 2px solid var(--beige-light);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+  .draft-card:hover { border-color: var(--beige); }
+  .draft-card.hot { border-left: 4px solid var(--hot); }
+  .draft-card.warm { border-left: 4px solid var(--warm); }
+  .draft-card.cool { border-left: 4px solid var(--cool); }
+  .draft-card.cold { border-left: 4px solid var(--cold); }
+  .draft-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .draft-name { font-weight: 700; font-size: 15px; }
+  .draft-meta { display: flex; gap: 8px; align-items: center; }
+  .draft-dm {
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .draft-dm::before {
+    content: 'DM Preview';
+    position: absolute;
+    top: -8px;
+    left: 12px;
+    background: var(--bg);
+    padding: 0 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+  }
+  .draft-why {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-bottom: 12px;
+  }
+  .draft-actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-approve { background: var(--green); color: white; }
+  .btn-approve:hover { filter: brightness(1.1); }
+  .btn-reject { background: white; color: var(--red); border: 2px solid var(--red); }
+  .btn-reject:hover { background: #FFEBEE; }
+  .btn-edit { background: white; color: var(--accent); border: 2px solid var(--beige); }
+  .btn-edit:hover { background: var(--beige-light); }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-sm { padding: 6px 12px; font-size: 11px; }
+
+  /* Tags */
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .tag.hot { background: #FFEBEE; color: #C62828; }
+  .tag.warm { background: #FFF3E0; color: #E65100; }
+  .tag.cool { background: #E3F2FD; color: #1565C0; }
+  .tag.cold { background: #ECEFF1; color: #546E7A; }
+  .tag.high { background: #FFEBEE; color: #C62828; }
+  .tag.medium { background: #FFF3E0; color: #E65100; }
+  .tag.low { background: #E3F2FD; color: #1565C0; }
+  .tag.ad { background: #F3E5F5; color: #7B1FA2; }
+  .tag.organic { background: #E8F5E9; color: #2E7D32; }
+  .tag.approved { background: #E8F5E9; color: #2E7D32; }
+  .tag.rejected { background: #FFEBEE; color: #C62828; }
+  .tag.pending { background: #FFF3E0; color: #E65100; }
+
+  /* Notification Feed */
+  .notif-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--beige-light);
+  }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .notif-icon.hot { background: #FFEBEE; }
+  .notif-icon.new { background: #E3F2FD; }
+  .notif-icon.sync { background: #E8F5E9; }
+  .notif-icon.check { background: #E8F5E9; }
+  .notif-icon.x { background: #FFEBEE; }
+  .notif-text { flex: 1; }
+  .notif-title { font-size: 13px; font-weight: 600; }
+  .notif-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .notif-time { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+  /* Search */
+  .search-box {
+    width: 100%; padding: 10px 16px; border: 2px solid var(--beige); border-radius: 8px;
+    font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.2s; margin-bottom: 12px;
+  }
+  .search-box:focus { border-color: var(--accent); }
+
+  /* Filter bar */
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    border: 2px solid var(--beige); background: white; cursor: pointer; transition: all 0.2s;
+  }
+  .filter-btn:hover { background: var(--beige-light); }
+  .filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  /* Leads Table */
+  .leads-table { width: 100%; font-size: 13px; border-collapse: collapse; }
+  .leads-table th {
+    text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--text-muted); padding: 8px 10px; border-bottom: 2px solid var(--beige);
+    cursor: pointer; user-select: none;
+  }
+  .leads-table th:hover { color: var(--text); }
+  .leads-table td { padding: 10px; border-bottom: 1px solid var(--beige-light); vertical-align: middle; }
+  .leads-table tr:hover { background: var(--beige-light); cursor: pointer; }
+
+  /* Pipeline stages */
+  .stage-tag { padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .stage-contact { background: #D6E4F0; color: #1565C0; }
+  .stage-responder { background: #C5D8EC; color: #0D47A1; }
+  .stage-qualifying { background: #E4D6F0; color: #7B1FA2; }
+  .stage-nurture { background: #FFF3E0; color: #E65100; }
+  .stage-call { background: #FFE0B2; color: #E65100; }
+  .stage-closed { background: #C8E6C9; color: #1B5E20; }
+
+  /* Lead Detail Panel */
+  .lead-detail {
+    position: fixed; top: 0; right: -500px; width: 480px; height: 100vh;
+    background: var(--card); box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+    z-index: 200; overflow-y: auto; transition: right 0.3s ease;
+  }
+  .lead-detail.open { right: 0; }
+  .lead-detail-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.3); z-index: 199; display: none;
+  }
+  .lead-detail-overlay.open { display: block; }
+  .lead-detail-header {
+    background: var(--accent); color: white; padding: 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .lead-detail-close {
+    background: none; border: none; color: white; font-size: 24px; cursor: pointer;
+  }
+  .lead-detail-body { padding: 20px; }
+  .detail-section { margin-bottom: 20px; }
+  .detail-section h3 {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px;
+  }
+  .detail-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+  .detail-label { color: var(--text-muted); }
+  .detail-value { font-weight: 500; text-align: right; max-width: 60%; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center; padding: 48px 20px; color: var(--text-muted);
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state h3 { font-size: 16px; margin-bottom: 8px; color: var(--text); }
+  .empty-state p { font-size: 13px; }
+
+  /* Notification badge */
+  .notif-badge {
+    background: var(--hot); color: white; font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 10px; margin-left: 6px; min-width: 18px;
+    display: inline-block; text-align: center;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .lead-detail { width: 100%; right: -100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <h1>SWC COMMAND CENTER</h1>
+  <div class="topbar-right">
+    <span class="status"><span class="dot green"></span> Live</span>
+    <span class="status" id="agentStatusDot"><span class="dot orange"></span> <span id="agentStatusText">Agents: Notify Only</span></span>
+    <span id="clock" style="font-size:12px;color:rgba(255,255,255,0.7)"></span>
+    <span class="user-badge">{{ user }}</span>
+    <a href="/logout" class="logout-btn">Sign Out</a>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Navigation -->
+  <div class="nav-tabs" id="navTabs">
+    <div class="nav-tab active" data-view="dashboard" onclick="switchView('dashboard')">Dashboard</div>
+    <div class="nav-tab" data-view="agents" onclick="switchView('agents')">Agent Hub</div>
+    <div class="nav-tab" data-view="drafts" onclick="switchView('drafts')">DM Drafts <span class="notif-badge" id="draftsBadge" style="display:none">0</span></div>
+    <div class="nav-tab" data-view="crm" onclick="switchView('crm')">CRM</div>
+    <div class="nav-tab" data-view="notifications" onclick="switchView('notifications')">Notifications <span class="notif-badge" id="notifBadge" style="display:none">0</span></div>
+    {% if role == 'admin' %}
+    <div class="nav-tab" data-view="settings" onclick="switchView('settings')">Settings</div>
+    {% endif %}
+  </div>
+
+  <!-- ═══ DASHBOARD VIEW ═══ -->
+  <div class="view active" id="view-dashboard">
+    <div class="kpi-row" id="kpiRow"></div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">Pipeline Summary</div>
+        <div class="card-body" id="pipelineSummary"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">Agent Activity</div>
+        <div class="card-body" id="dashFeed"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        Hot Leads — Need Attention
+        <span class="tag hot" id="hotCount">0</span>
+      </div>
+      <div class="card-body">
+        <table class="leads-table" id="hotTable">
+          <thead><tr>
+            <th>Name</th><th>IG</th><th>Keyword</th><th>Temp</th><th>Stage</th><th>Notes</th>
+          </tr></thead>
+          <tbody id="hotBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ AGENT HUB VIEW ═══ -->
+  <div class="view" id="view-agents">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          Agent Controls
+          {% if role == 'admin' %}
+          <button class="btn btn-sm btn-primary" onclick="runOpener()">Run Opener Now</button>
+          {% endif %}
+        </div>
+        <div class="card-body" id="agentControls"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">Agent Mode</div>
+        <div class="card-body">
+          <div style="padding:12px 0">
+            <div style="font-weight:600;margin-bottom:12px">Current Mode</div>
+            <div class="filter-bar">
+              <button class="filter-btn active" id="modeNotify" onclick="setAgentMode('notify')">Notify Only</button>
+              <button class="filter-btn" id="modeDraft" onclick="setAgentMode('draft')">Draft + Approve</button>
+              <button class="filter-btn" id="modeAuto" onclick="setAgentMode('auto')">Full Auto</button>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:8px" id="modeDesc">
+              Agents will notify you of new leads and activity. No DMs sent without your approval.
+            </div>
+          </div>
+          <hr style="border:none;border-top:1px solid var(--beige-light);margin:12px 0">
+          <div style="padding:12px 0">
+            <div style="font-weight:600;margin-bottom:8px">Opener Agent Training Status</div>
+            <div style="background:var(--beige-light);border-radius:8px;height:12px;overflow:hidden;margin-bottom:8px">
+              <div style="background:var(--green);height:100%;width:65%;border-radius:8px;transition:width 0.5s"></div>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted)">65% trained — 26 drafts generated, needs review & feedback to reach 90%+</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Recent Agent Activity</div>
+      <div class="card-body" id="agentActivityFeed"></div>
+    </div>
+  </div>
+
+  <!-- ═══ DM DRAFTS VIEW ═══ -->
+  <div class="view" id="view-drafts">
+    <div class="kpi-row" style="grid-template-columns: repeat(4, 1fr)">
+      <div class="kpi-card">
+        <div class="label">Total Drafts</div>
+        <div class="value" id="draftsTotal">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">High Priority</div>
+        <div class="value" style="color:var(--hot)" id="draftsHigh">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Approved</div>
+        <div class="value" style="color:var(--green)" id="draftsApproved">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="label">Pending</div>
+        <div class="value" style="color:var(--orange)" id="draftsPending">0</div>
+      </div>
+    </div>
+
+    <div class="filter-bar" style="margin-bottom:16px">
+      <button class="filter-btn active" onclick="filterDrafts('all', this)">All</button>
+      <button class="filter-btn" onclick="filterDrafts('high', this)">High Priority</button>
+      <button class="filter-btn" onclick="filterDrafts('medium', this)">Medium</button>
+      <button class="filter-btn" onclick="filterDrafts('low', this)">Low</button>
+      <button class="filter-btn" onclick="filterDrafts('pending', this)">Pending</button>
+      <button class="filter-btn" onclick="filterDrafts('approved', this)">Approved</button>
+    </div>
+
+    <div id="draftsContainer"></div>
+  </div>
+
+  <!-- ═══ CRM VIEW ═══ -->
+  <div class="view" id="view-crm">
+    <div class="kpi-row" style="grid-template-columns: repeat(5, 1fr)" id="crmKpis"></div>
+    <div class="card">
+      <div class="card-header">
+        Lead Database
+        <span style="font-size:12px;font-weight:400;text-transform:none" id="crmCount"></span>
+      </div>
+      <div class="card-body">
+        <input type="text" class="search-box" placeholder="Search by name, IG handle, keyword, goal, stage..." id="crmSearch" oninput="filterCRM()">
+        <div class="filter-bar" id="crmFilters">
+          <button class="filter-btn active" onclick="setCRMFilter('all', this)">All</button>
+          <button class="filter-btn" onclick="setCRMFilter('hot', this)">Hot</button>
+          <button class="filter-btn" onclick="setCRMFilter('warm', this)">Warm</button>
+          <button class="filter-btn" onclick="setCRMFilter('ad', this)">Ad Leads</button>
+          <button class="filter-btn" onclick="setCRMFilter('organic', this)">Organic</button>
+          <button class="filter-btn" onclick="setCRMFilter('qualifying', this)">Qualifying</button>
+          <button class="filter-btn" onclick="setCRMFilter('calls', this)">Calls</button>
+          <button class="filter-btn" onclick="setCRMFilter('closed', this)">Closed</button>
+          <button class="filter-btn" onclick="setCRMFilter('nurture', this)">Nurture</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="leads-table" id="crmTable">
+            <thead><tr>
+              <th onclick="sortCRM('name')">Name</th>
+              <th onclick="sortCRM('ig')">IG Handle</th>
+              <th onclick="sortCRM('source')">Source</th>
+              <th onclick="sortCRM('date')">Date</th>
+              <th onclick="sortCRM('stage')">Stage</th>
+              <th onclick="sortCRM('temp')">Temp</th>
+              <th onclick="sortCRM('goal')">Goal</th>
+              <th>Notes</th>
+            </tr></thead>
+            <tbody id="crmBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ NOTIFICATIONS VIEW ═══ -->
+  <div class="view" id="view-notifications">
+    <div class="card">
+      <div class="card-header">Activity Feed</div>
+      <div class="card-body" id="notifFeed"></div>
+    </div>
+  </div>
+
+  <!-- ═══ SETTINGS VIEW (Admin Only) ═══ -->
+  {% if role == 'admin' %}
+  <div class="view" id="view-settings">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">User Accounts</div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Manage portal access. Give clients a login to view the CRM.</p>
+          <div id="usersList"></div>
+          <hr style="border:none;border-top:1px solid var(--beige-light);margin:16px 0">
+          <div style="font-weight:600;margin-bottom:12px">Add New User</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input type="text" id="newUsername" placeholder="Username" style="padding:8px 12px;border:2px solid var(--beige-light);border-radius:8px;font-family:inherit;font-size:13px">
+            <input type="password" id="newPassword" placeholder="Password" style="padding:8px 12px;border:2px solid var(--beige-light);border-radius:8px;font-family:inherit;font-size:13px">
+            <select id="newRole" style="padding:8px 12px;border:2px solid var(--beige-light);border-radius:8px;font-family:inherit;font-size:13px">
+              <option value="viewer">Viewer (Client)</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="addUser()">Add User</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">Server Info</div>
+        <div class="card-body">
+          <div class="detail-row"><span class="detail-label">Server</span><span class="detail-value">Flask (Local)</span></div>
+          <div class="detail-row"><span class="detail-label">Port</span><span class="detail-value">5555</span></div>
+          <div class="detail-row"><span class="detail-label">Data Source</span><span class="detail-value">Local JSON + CRM</span></div>
+          <div class="detail-row"><span class="detail-label">Agents Dir</span><span class="detail-value">agents/</span></div>
+          <hr style="border:none;border-top:1px solid var(--beige-light);margin:12px 0">
+          <p style="font-size:12px;color:var(--text-muted)">To make this accessible externally, deploy to a cloud provider or use a tunnel (ngrok, Cloudflare Tunnel).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Lead Detail Slide-out Panel -->
+<div class="lead-detail-overlay" id="detailOverlay" onclick="closeDetail()"></div>
+<div class="lead-detail" id="detailPanel">
+  <div class="lead-detail-header">
+    <div>
+      <div style="font-size:16px;font-weight:700" id="detailName"></div>
+      <div style="font-size:13px;opacity:0.8" id="detailHandle"></div>
+    </div>
+    <button class="lead-detail-close" onclick="closeDetail()">&times;</button>
+  </div>
+  <div class="lead-detail-body" id="detailBody"></div>
+</div>
+
+<script>
+// ═══ State ═══
+const ROLE = '{{ role }}';
+let allLeads = [];
+let allDrafts = [];
+let agentStatus = {};
+let notifications = [];
+let approvalLog = {};
+let crmFilter = 'all';
+let crmSort = { field: 'date', dir: -1 };
+let draftFilter = 'all';
+
+// ═══ Clock ═══
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ═══ Navigation ═══
+function switchView(viewName) {
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.view === viewName);
+  });
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + viewName).classList.add('active');
+}
+
+// ═══ Data Loading ═══
+async function loadAll() {
+  try {
+    const [leadsRes, draftsRes, statusRes, notifRes] = await Promise.all([
+      fetch('/api/leads'),
+      fetch('/api/agent/drafts/latest'),
+      fetch('/api/agent/status'),
+      fetch('/api/notifications')
+    ]);
+    allLeads = await leadsRes.json();
+    allDrafts = await draftsRes.json();
+    agentStatus = await statusRes.json();
+    notifications = await notifRes.json();
+
+    // Load approval log
+    try {
+      const logRes = await fetch('/static/agents/approval_log.json');
+      if (logRes.ok) {
+        const log = await logRes.json();
+        log.forEach(e => { approvalLog[e.name] = e.action; });
+      }
+    } catch(e) {}
+
+    renderAll();
+  } catch(e) {
+    console.error('Load error:', e);
+  }
+}
+
+function renderAll() {
+  renderDashboard();
+  renderAgents();
+  renderDrafts();
+  renderCRM();
+  renderNotifications();
+  renderSettings();
+  updateBadges();
+}
+
+// ═══ Field Helpers (handle both JSON schemas) ═══
+function getIG(l) { return l.ig || ''; }
+function getName(l) { return l.name || ''; }
+function getDate(l) { return l.dateFirst || l.date || ''; }
+function getSource(l) { return l.source || (isAd(l) ? 'Paid Ad' : 'IG Organic'); }
+function isAd(l) { return l.adLead === 'Yes' || l.ad === true; }
+function getTemp(l) { return l.temp || ''; }
+function getGoal(l) { return l.goal || ''; }
+function getStage(l) { return l.stage || ''; }
+function getNotes(l) { return l.notes || l.lastSummary || ''; }
+function getKeyword(l) { return l.keyword || ''; }
+function getObjection(l) { return l.objection || ''; }
+function getNextAction(l) { return l.nextAction || ''; }
+function getFollowUp(l) { return l.followUp || ''; }
+function getStatus(l) { return l.status || 'Prospect'; }
+function getRelationship(l) { return l.relationship || 'Lead'; }
+
+// ═══ Dashboard ═══
+function renderDashboard() {
+  const hot = allLeads.filter(l => getTemp(l) === 'Hot' || (getNotes(l)).toLowerCase().includes('pricing'));
+  const qualifying = allLeads.filter(l => getStage(l).includes('Qualifying'));
+  const adLeads = allLeads.filter(l => isAd(l));
+  const withGoal = allLeads.filter(l => getGoal(l));
+
+  // Revenue calculations
+  const amt = l => parseFloat(l.amount || 0);
+  const prb = l => parseFloat(l.prob || 0);
+  const totalPipeline = allLeads.reduce((s,l) => s + amt(l), 0);
+  const weightedPipeline = allLeads.reduce((s,l) => s + amt(l) * prb(l), 0);
+  const closedLeads = allLeads.filter(l => getStage(l).includes('Closed'));
+  const closedRevenue = closedLeads.reduce((s,l) => s + amt(l), 0);
+  const callBooked = allLeads.filter(l => getStage(l).includes('Call Booked') || getStage(l).includes('Call Done'));
+
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi-card"><div class="label">Total Leads</div><div class="value">${allLeads.length.toLocaleString()}</div><div class="sub">${adLeads.length} ad + ${allLeads.length - adLeads.length} organic</div></div>
+    <div class="kpi-card"><div class="label">Pipeline Value</div><div class="value" style="color:var(--green)">$${totalPipeline.toLocaleString()}</div><div class="sub">Weighted: $${Math.round(weightedPipeline).toLocaleString()}</div></div>
+    <div class="kpi-card"><div class="label">Closed Revenue</div><div class="value" style="color:var(--green)">$${closedRevenue.toLocaleString()}</div><div class="sub">${closedLeads.length} deals closed</div></div>
+    <div class="kpi-card"><div class="label">Calls</div><div class="value" style="color:var(--orange)">${callBooked.length}</div><div class="sub">Booked + Completed</div></div>
+    <div class="kpi-card"><div class="label">Hot Leads</div><div class="value" style="color:var(--hot)">${hot.length}</div><div class="sub">${qualifying.length} qualifying</div></div>
+  `;
+
+  // Pipeline summary
+  const stages = {};
+  allLeads.forEach(l => { const s = getStage(l) || 'Unknown'; stages[s] = (stages[s]||0) + 1; });
+  // Revenue by stage
+  const stageRev = {};
+  allLeads.forEach(l => {
+    const s = getStage(l) || 'Unknown';
+    if (!stageRev[s]) stageRev[s] = {count:0, rev:0, weighted:0};
+    stageRev[s].count++;
+    stageRev[s].rev += amt(l);
+    stageRev[s].weighted += amt(l) * prb(l);
+  });
+
+  let pipeHTML = '';
+  const stageOrder = ['Contact Received','Responder Sent','Qualifying - Confirming','Qualifying - Confirmed','Nurture - Organic','Nurture - Ad','Call Invite Sent','Call Booked','Call Done - Follow Up','Call Done - Closed'];
+  const stageColors = ['#64B5F6','#5C9FD6','#BA68C8','#9C27B0','#FFB74D','#F5A623','#FF8A65','#FF7043','#F48FB1','#4CAF50'];
+  stageOrder.forEach((s, si) => {
+    const count = stages[s] || 0;
+    const rev = stageRev[s] ? stageRev[s].rev : 0;
+    const wrev = stageRev[s] ? stageRev[s].weighted : 0;
+    const pct = Math.max(Math.round(count / allLeads.length * 100), 2);
+    const revLabel = rev > 0 ? ` · $${rev.toLocaleString()}` : '';
+    pipeHTML += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer" onclick="setCRMFilter('${s.includes('Nurture')?'nurture':s.includes('Call')?'calls':s.includes('Qualifying')?'qualifying':s.includes('Closed')?'closed':'all'}',null);switchView('crm')">
+      <span style="font-size:11px;width:150px;text-align:right;white-space:nowrap">${s}</span>
+      <div style="flex:1;height:28px;background:var(--beige-light);border-radius:6px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${stageColors[si]||'var(--beige)'};border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:11px;font-weight:700;color:white;min-width:40px">${count}</div>
+      </div>
+      <span style="font-size:11px;font-weight:600;width:90px;text-align:right;color:${rev>0?'var(--green)':'var(--text-muted)'}">${rev > 0 ? '$'+rev.toLocaleString() : ''}</span>
+    </div>`;
+  });
+  document.getElementById('pipelineSummary').innerHTML = pipeHTML;
+
+  // Activity feed
+  let feedHTML = '';
+  notifications.slice(0, 8).forEach(n => {
+    const icons = {hot:'&#x1F525;', new:'&#x1F195;', sync:'&#x1F504;', check:'&#x2705;', x:'&#x274C;'};
+    feedHTML += `<div class="notif-item">
+      <div class="notif-icon ${n.icon}">${icons[n.icon]||'&#x1F4AC;'}</div>
+      <div class="notif-text">
+        <div class="notif-title">${n.title}</div>
+        <div class="notif-sub">${n.subtitle||''}</div>
+      </div>
+      <div class="notif-time">${n.date}</div>
+    </div>`;
+  });
+  document.getElementById('dashFeed').innerHTML = feedHTML || '<div class="empty-state"><p>No recent activity</p></div>';
+
+  // Hot leads table
+  document.getElementById('hotCount').textContent = hot.length;
+  let hotHTML = '';
+  hot.slice(0, 20).forEach(l => {
+    const idx = allLeads.indexOf(l);
+    hotHTML += `<tr onclick="openDetail(${idx})">
+      <td style="font-weight:600">${getName(l) || '-'}</td>
+      <td style="color:var(--blue)">${getIG(l) ? getIG(l) : '-'}</td>
+      <td>${getKeyword(l) || getSource(l)}</td>
+      <td><span class="tag hot">Hot</span></td>
+      <td><span class="stage-tag ${getStageClass(getStage(l))}">${getStage(l)||'Unknown'}</span></td>
+      <td style="font-size:12px;color:var(--text-muted);max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${getNotes(l)}</td>
+    </tr>`;
+  });
+  document.getElementById('hotBody').innerHTML = hotHTML;
+}
+
+// ═══ Agents ═══
+function renderAgents() {
+  let html = '';
+  Object.entries(agentStatus).forEach(([id, agent]) => {
+    html += `<div class="agent-row">
+      <div class="agent-info">
+        <div class="agent-name">${agent.label}</div>
+        <div class="agent-desc">${agent.description}</div>
+        ${agent.last_run ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">Last run: ${new Date(agent.last_run).toLocaleString()}</div>` : ''}
+      </div>
+      <div class="agent-controls">
+        <span class="agent-badge ${agent.enabled ? 'on' : 'off'}">${agent.enabled ? 'ON' : 'OFF'}</span>
+        ${ROLE === 'admin' ? `<label class="toggle"><input type="checkbox" ${agent.enabled ? 'checked' : ''} onchange="toggleAgent('${id}','enabled')"><span class="slider"></span></label>` : ''}
+      </div>
+    </div>`;
+  });
+  document.getElementById('agentControls').innerHTML = html;
+
+  // Activity feed for agents view
+  let feedHTML = '';
+  notifications.filter(n => n.type === 'approval' || n.type === 'crm_update').slice(0, 10).forEach(n => {
+    const icons = {check:'&#x2705;', x:'&#x274C;', sync:'&#x1F504;'};
+    feedHTML += `<div class="notif-item">
+      <div class="notif-icon ${n.icon}">${icons[n.icon]||'&#x1F4AC;'}</div>
+      <div class="notif-text">
+        <div class="notif-title">${n.title}</div>
+        <div class="notif-sub">${n.subtitle||''}</div>
+      </div>
+      <div class="notif-time">${n.date}</div>
+    </div>`;
+  });
+  document.getElementById('agentActivityFeed').innerHTML = feedHTML || '<div class="empty-state"><p>No agent activity yet</p></div>';
+}
+
+async function toggleAgent(agentId, field) {
+  await fetch('/api/agent/toggle', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({agent: agentId, field})
+  });
+  loadAll();
+}
+
+async function runOpener() {
+  const btn = event.target;
+  btn.textContent = 'Running...';
+  btn.disabled = true;
+  const res = await fetch('/api/agent/run-opener', {method: 'POST'});
+  const data = await res.json();
+  btn.textContent = data.ok ? 'Done!' : 'Error';
+  setTimeout(() => { btn.textContent = 'Run Opener Now'; btn.disabled = false; loadAll(); }, 2000);
+}
+
+function setAgentMode(mode) {
+  document.querySelectorAll('#view-agents .filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
+  const descs = {
+    notify: 'Agents will notify you of new leads and activity. No DMs sent without your approval.',
+    draft: 'Agents will generate DM drafts for your review. You approve before anything is sent.',
+    auto: 'Agents will send approved first-touch DMs automatically. Only enable once agent is fully trained.'
+  };
+  document.getElementById('modeDesc').textContent = descs[mode];
+  document.getElementById('agentStatusText').textContent = mode === 'auto' ? 'Agents: Full Auto' : mode === 'draft' ? 'Agents: Draft Mode' : 'Agents: Notify Only';
+}
+
+// ═══ DM Drafts ═══
+function renderDrafts() {
+  const pending = allDrafts.filter(d => !approvalLog[d.name]);
+  const approved = allDrafts.filter(d => approvalLog[d.name] === 'approved');
+  const high = allDrafts.filter(d => (d.priority||'').toLowerCase() === 'high');
+
+  document.getElementById('draftsTotal').textContent = allDrafts.length;
+  document.getElementById('draftsHigh').textContent = high.length;
+  document.getElementById('draftsApproved').textContent = approved.length;
+  document.getElementById('draftsPending').textContent = pending.length;
+
+  let filtered = allDrafts;
+  if (draftFilter === 'high') filtered = allDrafts.filter(d => (d.priority||'').toLowerCase() === 'high');
+  else if (draftFilter === 'medium') filtered = allDrafts.filter(d => (d.priority||'').toLowerCase() === 'medium');
+  else if (draftFilter === 'low') filtered = allDrafts.filter(d => (d.priority||'').toLowerCase() === 'low');
+  else if (draftFilter === 'pending') filtered = allDrafts.filter(d => !approvalLog[d.name]);
+  else if (draftFilter === 'approved') filtered = allDrafts.filter(d => approvalLog[d.name] === 'approved');
+
+  let html = '';
+  if (filtered.length === 0) {
+    html = '<div class="empty-state"><div class="icon">&#x1F4DD;</div><h3>No drafts yet</h3><p>Run the Opener Agent to generate DM drafts</p></div>';
+  }
+
+  filtered.forEach((d, i) => {
+    const temp = (d.temperature || 'cool').toLowerCase();
+    const priority = (d.priority || 'LOW').toUpperCase();
+    const status = approvalLog[d.name] || 'pending';
+    html += `<div class="draft-card ${temp}">
+      <div class="draft-header">
+        <div class="draft-name">${d.name}</div>
+        <div class="draft-meta">
+          ${d.keyword ? `<span class="tag organic">${d.keyword}</span>` : ''}
+          <span class="tag ${temp}">${(d.temperature||'Cool')}</span>
+          <span class="tag ${priority.toLowerCase()}">${priority}</span>
+          <span class="tag ${status}">${status.charAt(0).toUpperCase()+status.slice(1)}</span>
+        </div>
+      </div>
+      <div class="draft-dm">${d.dm || 'No DM content parsed'}</div>
+      ${d.why ? `<div class="draft-why">${d.why}</div>` : ''}
+      ${ROLE === 'admin' && status === 'pending' ? `
+      <div class="draft-actions">
+        <button class="btn btn-approve" onclick="approveDraft('${d.name.replace(/'/g,"\\'")}')">Approve & Queue</button>
+        <button class="btn btn-reject" onclick="rejectDraft('${d.name.replace(/'/g,"\\'")}')">Reject</button>
+        <button class="btn btn-edit" onclick="editDraft(${i})">Edit</button>
+      </div>` : ''}
+    </div>`;
+  });
+  document.getElementById('draftsContainer').innerHTML = html;
+}
+
+function filterDrafts(filter, btn) {
+  draftFilter = filter;
+  document.querySelectorAll('#view-drafts .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderDrafts();
+}
+
+async function approveDraft(name) {
+  await fetch('/api/agent/approve', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name})
+  });
+  approvalLog[name] = 'approved';
+  renderDrafts();
+}
+
+async function rejectDraft(name) {
+  const reason = prompt('Rejection reason (optional):');
+  await fetch('/api/agent/reject', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name, reason: reason||''})
+  });
+  approvalLog[name] = 'rejected';
+  renderDrafts();
+}
+
+function editDraft(index) {
+  const d = allDrafts[index];
+  const newDM = prompt('Edit the DM draft:', d.dm);
+  if (newDM !== null && newDM !== d.dm) {
+    allDrafts[index].dm = newDM;
+    renderDrafts();
+  }
+}
+
+// ═══ CRM ═══
+const CRM_PAGE_SIZE = 100;
+let crmPage = 0;
+let crmFiltered = [];
+
+function renderCRM() {
+  const stages = {};
+  allLeads.forEach(l => { const s = getStage(l) || 'Unknown'; stages[s] = (stages[s]||0)+1; });
+  const goals = {};
+  allLeads.filter(l => getGoal(l)).forEach(l => { goals[getGoal(l)] = (goals[getGoal(l)]||0)+1; });
+  const topGoal = Object.entries(goals).sort((a,b)=>b[1]-a[1])[0];
+  const adCount = allLeads.filter(l => isAd(l)).length;
+  const closedCount = allLeads.filter(l => getStage(l).includes('Closed')).length;
+
+  document.getElementById('crmKpis').innerHTML = `
+    <div class="kpi-card"><div class="label">Total Leads</div><div class="value">${allLeads.length.toLocaleString()}</div></div>
+    <div class="kpi-card"><div class="label">Ad Leads</div><div class="value" style="color:var(--purple)">${adCount}</div><div class="sub">${Math.round(adCount/allLeads.length*100)}% of total</div></div>
+    <div class="kpi-card"><div class="label">Organic Leads</div><div class="value" style="color:var(--green)">${allLeads.length - adCount}</div></div>
+    <div class="kpi-card"><div class="label">Closed Won</div><div class="value" style="color:var(--green)">${closedCount}</div></div>
+    <div class="kpi-card"><div class="label">Top Goal</div><div class="value" style="font-size:16px">${topGoal ? topGoal[0] : '-'}</div><div class="sub">${topGoal ? topGoal[1]+' leads' : ''}</div></div>
+  `;
+
+  filterCRM();
+}
+
+function filterCRM() {
+  const q = (document.getElementById('crmSearch').value || '').toLowerCase();
+  let filtered = allLeads;
+
+  // Apply filter
+  if (crmFilter === 'hot') filtered = filtered.filter(l => getTemp(l) === 'Hot');
+  else if (crmFilter === 'warm') filtered = filtered.filter(l => getTemp(l) === 'Warm');
+  else if (crmFilter === 'keyword') filtered = filtered.filter(l => getKeyword(l));
+  else if (crmFilter === 'ad') filtered = filtered.filter(l => isAd(l));
+  else if (crmFilter === 'organic') filtered = filtered.filter(l => !isAd(l));
+  else if (crmFilter === 'qualifying') filtered = filtered.filter(l => getStage(l).includes('Qualifying'));
+  else if (crmFilter === 'closed') filtered = filtered.filter(l => getStage(l).includes('Closed'));
+  else if (crmFilter === 'nurture') filtered = filtered.filter(l => getStage(l).includes('Nurture'));
+  else if (crmFilter === 'calls') filtered = filtered.filter(l => getStage(l).includes('Call'));
+
+  // Apply search
+  if (q) {
+    filtered = filtered.filter(l =>
+      getName(l).toLowerCase().includes(q) ||
+      getIG(l).toLowerCase().includes(q) ||
+      getKeyword(l).toLowerCase().includes(q) ||
+      getGoal(l).toLowerCase().includes(q) ||
+      getStage(l).toLowerCase().includes(q) ||
+      getNotes(l).toLowerCase().includes(q) ||
+      getSource(l).toLowerCase().includes(q) ||
+      getObjection(l).toLowerCase().includes(q) ||
+      (l.pain||'').toLowerCase().includes(q)
+    );
+  }
+
+  // Sort
+  const sortFieldMap = {name:'name', ig:'ig', keyword:'keyword', date:'dateFirst', stage:'stage', temp:'temp', goal:'goal', source:'source'};
+  const actualField = sortFieldMap[crmSort.field] || crmSort.field;
+  filtered.sort((a, b) => {
+    let va = a[actualField] || '';
+    let vb = b[actualField] || '';
+    if (crmSort.field === 'date') {
+      va = new Date(va || '1/1/2000'); vb = new Date(vb || '1/1/2000');
+    } else {
+      va = String(va).toLowerCase(); vb = String(vb).toLowerCase();
+    }
+    return va > vb ? crmSort.dir : va < vb ? -crmSort.dir : 0;
+  });
+
+  crmFiltered = filtered;
+  document.getElementById('crmCount').textContent = `${filtered.length.toLocaleString()} leads`;
+
+  // Paginate
+  const start = crmPage * CRM_PAGE_SIZE;
+  const page = filtered.slice(start, start + CRM_PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / CRM_PAGE_SIZE);
+
+  let html = '';
+  page.forEach(l => {
+    const idx = allLeads.indexOf(l);
+    const temp = getTemp(l).toLowerCase() || 'cool';
+    const stageClass = getStageClass(getStage(l));
+    html += `<tr onclick="openDetail(${idx})">
+      <td style="font-weight:600">${getName(l) || '-'}</td>
+      <td style="color:var(--blue)">${getIG(l) || '-'}</td>
+      <td>${getSource(l)}</td>
+      <td>${getDate(l) || '-'}</td>
+      <td><span class="stage-tag ${stageClass}">${getStage(l) || 'Unknown'}</span></td>
+      <td>${getTemp(l) ? `<span class="tag ${temp}">${getTemp(l)}</span>` : '-'}</td>
+      <td>${getGoal(l) || '-'}</td>
+      <td style="font-size:12px;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${getNotes(l)}</td>
+    </tr>`;
+  });
+  document.getElementById('crmBody').innerHTML = html || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px">No leads match your search</td></tr>';
+
+  // Pagination controls
+  let pagHTML = '';
+  if (totalPages > 1) {
+    pagHTML += `<button ${crmPage===0?'disabled':''} onclick="crmPage=0;filterCRM()" class="btn btn-sm btn-edit">&laquo;</button>`;
+    pagHTML += `<button ${crmPage===0?'disabled':''} onclick="crmPage--;filterCRM()" class="btn btn-sm btn-edit">&lsaquo;</button>`;
+    pagHTML += `<span style="font-size:12px;color:var(--text-muted);padding:0 8px">Page ${crmPage+1} of ${totalPages} (${filtered.length.toLocaleString()} leads)</span>`;
+    pagHTML += `<button ${crmPage>=totalPages-1?'disabled':''} onclick="crmPage++;filterCRM()" class="btn btn-sm btn-edit">&rsaquo;</button>`;
+    pagHTML += `<button ${crmPage>=totalPages-1?'disabled':''} onclick="crmPage=${totalPages-1};filterCRM()" class="btn btn-sm btn-edit">&raquo;</button>`;
+  }
+  // Insert pagination after table
+  let pagEl = document.getElementById('crmPagination');
+  if (!pagEl) {
+    pagEl = document.createElement('div');
+    pagEl.id = 'crmPagination';
+    pagEl.style.cssText = 'display:flex;gap:8px;justify-content:center;align-items:center;margin-top:14px';
+    document.getElementById('crmTable').parentElement.after(pagEl);
+  }
+  pagEl.innerHTML = pagHTML;
+}
+
+function setCRMFilter(filter, btn) {
+  crmFilter = filter;
+  crmPage = 0;
+  document.querySelectorAll('#crmFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  filterCRM();
+}
+
+function sortCRM(field) {
+  if (crmSort.field === field) crmSort.dir *= -1;
+  else { crmSort.field = field; crmSort.dir = 1; }
+  crmPage = 0;
+  filterCRM();
+}
+
+function getStageClass(stage) {
+  if (!stage) return '';
+  if (stage.includes('Contact')) return 'stage-contact';
+  if (stage.includes('Responder')) return 'stage-responder';
+  if (stage.includes('Qualifying')) return 'stage-qualifying';
+  if (stage.includes('Nurture')) return 'stage-nurture';
+  if (stage.includes('Call')) return 'stage-call';
+  if (stage.includes('Closed')) return 'stage-closed';
+  return '';
+}
+
+// ═══ Lead Detail ═══
+function openDetail(index) {
+  const l = allLeads[index];
+  document.getElementById('detailName').textContent = getName(l) || getIG(l) || 'Unknown';
+  document.getElementById('detailHandle').textContent = getIG(l) || '';
+
+  const temp = getTemp(l).toLowerCase() || 'cool';
+  const igClean = getIG(l).replace('@','').trim();
+  let html = '';
+
+  // Overview
+  html += `<div class="detail-section">
+    <h3>Overview</h3>
+    <div class="detail-row"><span class="detail-label">Stage</span><span class="detail-value"><span class="stage-tag ${getStageClass(getStage(l))}">${getStage(l)||'Unknown'}</span></span></div>
+    ${getTemp(l) ? `<div class="detail-row"><span class="detail-label">Temperature</span><span class="detail-value"><span class="tag ${temp}">${getTemp(l)}</span></span></div>` : ''}
+    <div class="detail-row"><span class="detail-label">Source</span><span class="detail-value">${isAd(l) ? '<span class="tag ad">Paid Ad</span>' : '<span class="tag organic">Organic</span>'}</span></div>
+    <div class="detail-row"><span class="detail-label">First Contact</span><span class="detail-value">${getDate(l)||'-'}</span></div>
+    ${l.status ? `<div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${getStatus(l)}</span></div>` : ''}
+    ${l.relationship && l.relationship !== 'Lead' ? `<div class="detail-row"><span class="detail-label">Relationship</span><span class="detail-value">${l.relationship}</span></div>` : ''}
+    ${l.id ? `<div class="detail-row"><span class="detail-label">Lead ID</span><span class="detail-value" style="font-family:monospace">${l.id}</span></div>` : ''}
+  </div>`;
+
+  // Goals, Pain Points, Objections
+  if (getGoal(l) || l.pain || getObjection(l)) {
+    html += `<div class="detail-section">
+      <h3>Goals & Insights</h3>
+      ${getGoal(l) ? `<div class="detail-row"><span class="detail-label">Goal</span><span class="detail-value">${getGoal(l)}</span></div>` : ''}
+      ${l.pain ? `<div class="detail-row"><span class="detail-label">Pain Points</span><span class="detail-value">${l.pain}</span></div>` : ''}
+      ${getObjection(l) && getObjection(l) !== 'No Objection' ? `<div class="detail-row"><span class="detail-label">Objection</span><span class="detail-value"><span class="tag warm">${getObjection(l)}</span></span></div>` : ''}
+    </div>`;
+  }
+
+  // Pipeline & Revenue
+  if (l.tier || l.amount || l.prob) {
+    html += `<div class="detail-section">
+      <h3>Pipeline</h3>
+      ${l.tier ? `<div class="detail-row"><span class="detail-label">Offer Tier</span><span class="detail-value">${l.tier}</span></div>` : ''}
+      ${l.amount ? `<div class="detail-row"><span class="detail-label">Amount</span><span class="detail-value" style="color:var(--green);font-weight:700">$${Number(l.amount).toLocaleString()}</span></div>` : ''}
+      ${l.prob ? `<div class="detail-row"><span class="detail-label">Close Probability</span><span class="detail-value">${Math.round(l.prob*100)}%</span></div>` : ''}
+      ${l.amount && l.prob ? `<div class="detail-row"><span class="detail-label">Weighted Revenue</span><span class="detail-value">$${Math.round(l.amount*l.prob).toLocaleString()}</span></div>` : ''}
+    </div>`;
+  }
+
+  // IG Profile Data
+  if (l.bio || l.followers) {
+    html += `<div class="detail-section">
+      <h3>Instagram Profile</h3>
+      ${l.followers ? `<div class="detail-row"><span class="detail-label">Followers</span><span class="detail-value">${Number(l.followers).toLocaleString()}</span></div>` : ''}
+      ${l.bio ? `<div class="detail-row"><span class="detail-label">Bio</span><span class="detail-value" style="text-align:left;max-width:100%">${l.bio}</span></div>` : ''}
+    </div>`;
+  }
+
+  // Next Steps & Follow-up
+  if (getNextAction(l) || getFollowUp(l)) {
+    html += `<div class="detail-section">
+      <h3>Next Steps</h3>
+      ${getNextAction(l) ? `<div class="detail-row"><span class="detail-label">Next Action</span><span class="detail-value">${getNextAction(l)}</span></div>` : ''}
+      ${getFollowUp(l) ? `<div class="detail-row"><span class="detail-label">Follow-up Date</span><span class="detail-value">${getFollowUp(l)}</span></div>` : ''}
+    </div>`;
+  }
+
+  // Notes / Last Summary
+  const noteText = getNotes(l);
+  if (noteText) {
+    html += `<div class="detail-section">
+      <h3>${l.lastSummary ? 'Last Interaction' : 'Notes'}</h3>
+      <p style="font-size:13px;line-height:1.6">${noteText}</p>
+    </div>`;
+  }
+
+  // Check for DM draft
+  const nameSearch = getName(l) || '___NOMATCH___';
+  const igSearch = igClean || '___NOMATCH___';
+  const draftMatch = allDrafts.find(d => (nameSearch !== '___NOMATCH___' && d.name.includes(nameSearch)) || (igSearch !== '___NOMATCH___' && d.name.includes(igSearch)));
+  if (draftMatch) {
+    html += `<div class="detail-section">
+      <h3>DM Draft</h3>
+      <div class="draft-dm" style="margin-top:8px">${draftMatch.dm || 'No DM content'}</div>
+      ${draftMatch.why ? `<div class="draft-why">${draftMatch.why}</div>` : ''}
+    </div>`;
+  }
+
+  // Actions
+  if (igClean) {
+    html += `<div class="detail-section">
+      <h3>Actions</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="window.open('https://www.instagram.com/${igClean}/','_blank')">View Profile</button>
+        <button class="btn btn-edit btn-sm" onclick="window.open('https://www.instagram.com/direct/t/${igClean}','_blank')">Open DM</button>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('detailBody').innerHTML = html;
+  document.getElementById('detailPanel').classList.add('open');
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+
+// ═══ Notifications ═══
+function renderNotifications() {
+  const icons = {hot:'&#x1F525;', new:'&#x1F195;', sync:'&#x1F504;', check:'&#x2705;', x:'&#x274C;'};
+  let html = '';
+  notifications.forEach(n => {
+    html += `<div class="notif-item">
+      <div class="notif-icon ${n.icon}">${icons[n.icon]||'&#x1F4AC;'}</div>
+      <div class="notif-text">
+        <div class="notif-title">${n.title}</div>
+        <div class="notif-sub">${n.subtitle||''}</div>
+      </div>
+      <div class="notif-time">${n.date}</div>
+    </div>`;
+  });
+  document.getElementById('notifFeed').innerHTML = html || '<div class="empty-state"><div class="icon">&#x1F514;</div><h3>No notifications</h3><p>Activity will appear here as leads come in and agents run</p></div>';
+}
+
+// ═══ Settings ═══
+function renderSettings() {
+  if (ROLE !== 'admin') return;
+  // User list is informational for now
+  document.getElementById('usersList').innerHTML = `
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--beige-light)">
+      <div><span style="font-weight:600">stef</span> <span class="tag approved">Admin</span></div>
+      <div style="font-size:12px;color:var(--text-muted)">Owner</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0">
+      <div><span style="font-weight:600">client</span> <span class="tag cool">Viewer</span></div>
+      <div style="font-size:12px;color:var(--text-muted)">Read-only CRM access</div>
+    </div>
+  `;
+}
+
+// ═══ Badges ═══
+function updateBadges() {
+  const pendingDrafts = allDrafts.filter(d => !approvalLog[d.name]).length;
+  const badge = document.getElementById('draftsBadge');
+  if (pendingDrafts > 0) { badge.textContent = pendingDrafts; badge.style.display = 'inline'; }
+  else { badge.style.display = 'none'; }
+
+  const hotNotifs = notifications.filter(n => n.priority === 'high').length;
+  const nbadge = document.getElementById('notifBadge');
+  if (hotNotifs > 0) { nbadge.textContent = hotNotifs; nbadge.style.display = 'inline'; }
+  else { nbadge.style.display = 'none'; }
+}
+
+// ═══ Auto-refresh ═══
+setInterval(loadAll, 60000); // Refresh every 60s
+
+// ═══ Init ═══
+loadAll();
+</script>
+</body>
+</html>

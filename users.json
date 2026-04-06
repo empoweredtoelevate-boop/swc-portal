@@ -1,0 +1,12 @@
+{
+  "stef": {
+    "password_hash": "5759436a3995679bc030126e2ad0c8302f9f563f32d2a56ccfadd5ac800d8d30",
+    "role": "admin",
+    "name": "Stefanie Will"
+  },
+  "client": {
+    "password_hash": "1735ecb3e28ebece8748553430981341a55f5beddf6466a497b774d367654fff",
+    "role": "viewer",
+    "name": "Client View"
+  }
+}

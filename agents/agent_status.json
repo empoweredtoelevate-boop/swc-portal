@@ -1,0 +1,44 @@
+{
+  "opener": {
+    "enabled": false,
+    "auto_send": false,
+    "last_run": null,
+    "label": "Opener Agent",
+    "description": "First-touch DM for keyword leads"
+  },
+  "setter": {
+    "enabled": false,
+    "auto_send": false,
+    "last_run": null,
+    "label": "Setter Brain",
+    "description": "Pain deepening & call booking"
+  },
+  "closer": {
+    "enabled": false,
+    "auto_send": false,
+    "last_run": null,
+    "label": "Closer Brain",
+    "description": "Call prep & close"
+  },
+  "nurture": {
+    "enabled": false,
+    "auto_send": false,
+    "last_run": null,
+    "label": "Nurture Agent",
+    "description": "Long-term follow-up sequences"
+  },
+  "ig_sync": {
+    "enabled": true,
+    "auto_send": false,
+    "last_run": "2026-04-05T18:00:00",
+    "label": "IG Sync Agent",
+    "description": "Daily IG notification processing"
+  },
+  "scraper": {
+    "enabled": false,
+    "auto_send": false,
+    "last_run": null,
+    "label": "Profile Scraper",
+    "description": "IG profile data enrichment"
+  }
+}
