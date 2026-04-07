@@ -1062,105 +1062,118 @@ function getStageClass(stage) {
   return '';
 }
 
-// ═══ Lead Detail ═══
+// ═══ Lead Detail - Full EMR View (All Fields Editable) ═══
 function openDetail(index) {
   const l = allLeads[index];
+  const isAdmin = document.body.dataset.role === 'admin';
+  const leadKey = l.id || l.ig || l.name;
   document.getElementById('detailName').textContent = getName(l) || getIG(l) || 'Unknown';
   document.getElementById('detailHandle').textContent = getIG(l) || '';
 
-  const temp = getTemp(l).toLowerCase() || 'cool';
   const igClean = getIG(l).replace('@','').trim();
+  const inp = (id, val, ph, style) => isAdmin ? `<input id="${id}" value="${val||''}" placeholder="${ph||''}" onchange="markPipelineDirty()" style="padding:4px 8px;border:1px solid var(--beige);border-radius:6px;font-size:13px;width:100%;max-width:260px;${style||''}" />` : `<span>${val||'-'}</span>`;
+  const ta = (id, val, ph) => isAdmin ? `<textarea id="${id}" onchange="markPipelineDirty()" placeholder="${ph||''}" style="padding:6px 8px;border:1px solid var(--beige);border-radius:6px;font-size:13px;width:100%;min-height:50px;resize:vertical;font-family:inherit">${val||''}</textarea>` : `<span style="font-size:13px">${val||'-'}</span>`;
+  const sel = (id, opts, val) => isAdmin ? `<select id="${id}" onchange="markPipelineDirty()" style="padding:4px 8px;border:1px solid var(--beige);border-radius:6px;font-size:13px;background:white"><option value="">--</option>${opts.map(o => `<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}</select>` : `<span>${val||'-'}</span>`;
+
+  const stages = ['Contact Received','Responder Sent','Qualifying - Confirming','Qualifying - Confirmed','Nurture - Organic','Nurture - Ad','Call Invite Sent','Call Booked','Call Done - Follow Up','Call Done - Closed'];
+  const sources = ['IG Organic','Paid Ad','Referral','Website','DM Inbound','Story Reply','Comment','Other'];
+  const touches = ['Story Reply','Reel Comment','Ad Click','DM','Post Like','Story View','Lead Magnet','Referral','Other'];
+  const goals = ['Weight Loss','Muscle Gain','Nutrition','Lifestyle Change','Competition Prep','Hormone Health','Gut Health','Energy/Vitality','Other'];
+  const temps = ['Hot','Warm','Cool','Cold'];
+  const statuses = ['Prospect','Active Lead','Discovery Booked','Client','Past Client','Lost'];
+  const objections = ['No Objection','Budget Cannot','Budget Hesitant','Timing/Not Now','Not Ready','Comparing Options','Spouse/Partner Decision','Need More Info','Trust/Skepticism','Previous Bad Experience','Health Concern','Other'];
+  const tiers = ['Discovery Package $500','Group Coaching $1500','1:1 Coaching $3000','1:1 Coaching 6mo $499/mo','VIP Intensive $5000'];
+  const ages = ['18-24','25-34','35-44','45-54','55-64','65+'];
+  const genders = ['Female','Male','Non-Binary','Prefer Not to Say'];
+  const levels = ['Beginner','Intermediate','Advanced','Returning'];
+
   let html = '';
 
-  // Overview
+  // ── Identity
   html += `<div class="detail-section">
-    <h3>Overview</h3>
-    <div class="detail-row"><span class="detail-label">Stage</span><span class="detail-value"><span class="stage-tag ${getStageClass(getStage(l))}">${getStage(l)||'Unknown'}</span></span></div>
-    ${getTemp(l) ? `<div class="detail-row"><span class="detail-label">Temperature</span><span class="detail-value"><span class="tag ${temp}">${getTemp(l)}</span></span></div>` : ''}
-    <div class="detail-row"><span class="detail-label">Source</span><span class="detail-value">${isAd(l) ? '<span class="tag ad">Paid Ad</span>' : '<span class="tag organic">Organic</span>'}</span></div>
-    <div class="detail-row"><span class="detail-label">First Contact</span><span class="detail-value">${getDate(l)||'-'}</span></div>
-    ${l.status ? `<div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${getStatus(l)}</span></div>` : ''}
-    ${l.relationship && l.relationship !== 'Lead' ? `<div class="detail-row"><span class="detail-label">Relationship</span><span class="detail-value">${l.relationship}</span></div>` : ''}
-    ${l.id ? `<div class="detail-row"><span class="detail-label">Lead ID</span><span class="detail-value" style="font-family:monospace">${l.id}</span></div>` : ''}
+    <h3>Identity</h3>
+    <div class="detail-row"><span class="detail-label">Lead ID</span><span class="detail-value" style="font-family:monospace">${l.id||'--'}</span></div>
+    <div class="detail-row"><span class="detail-label">Full Name</span><span class="detail-value">${inp('editName', getName(l), 'Full Name')}</span></div>
+    <div class="detail-row"><span class="detail-label">IG Handle</span><span class="detail-value">${inp('editIG', getIG(l), '@handle', 'color:var(--blue)')}</span></div>
+    <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${inp('editEmail', l.email, 'email@example.com')}</span></div>
+    <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">${inp('editPhone', l.phone, '(555) 123-4567')}</span></div>
+    <div class="detail-row"><span class="detail-label">Location</span><span class="detail-value">${inp('editLocation', l.location, 'City, State')}</span></div>
   </div>`;
 
-  // Goals, Pain Points, Objections
-  if (getGoal(l) || l.pain || getObjection(l)) {
-    html += `<div class="detail-section">
-      <h3>Goals & Insights</h3>
-      ${getGoal(l) ? `<div class="detail-row"><span class="detail-label">Goal</span><span class="detail-value">${getGoal(l)}</span></div>` : ''}
-      ${l.pain ? `<div class="detail-row"><span class="detail-label">Pain Points</span><span class="detail-value">${l.pain}</span></div>` : ''}
-      ${getObjection(l) && getObjection(l) !== 'No Objection' ? `<div class="detail-row"><span class="detail-label">Objection</span><span class="detail-value"><span class="tag warm">${getObjection(l)}</span></span></div>` : ''}
-    </div>`;
-  }
-
-  // Pipeline & Revenue (editable for admin)
-  const isClosed = getStage(l).includes('Closed');
-  const isAdmin = document.body.dataset.role === 'admin';
+  // ── Source & Attribution
   html += `<div class="detail-section">
-    <h3>Pipeline</h3>
-    <div class="detail-row">
-      <span class="detail-label">Offer Tier</span>
-      <span class="detail-value">${isAdmin ? `<select id="editTier" onchange="markPipelineDirty()" style="padding:4px 8px;border:1px solid var(--beige);border-radius:6px;font-size:13px;background:white">
-        <option value="">-- Select --</option>
-        <option value="Discovery Package $500" ${l.tier==='Discovery Package $500'?'selected':''}>Discovery Package $500</option>
-        <option value="Group Coaching $1500" ${l.tier==='Group Coaching $1500'?'selected':''}>Group Coaching $1,500</option>
-        <option value="1:1 Coaching $3000" ${l.tier==='1:1 Coaching $3000'?'selected':''}>1:1 Coaching $3,000</option>
-        <option value="1:1 Coaching 6mo $499/mo" ${l.tier==='1:1 Coaching 6mo $499/mo'?'selected':''}>1:1 Coaching 6mo $499/mo ($2,994)</option>
-        <option value="VIP Intensive $5000" ${l.tier==='VIP Intensive $5000'?'selected':''}>VIP Intensive $5,000+</option>
-      </select>` : (l.tier || '-')}</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-label">Amount Charged</span>
-      <span class="detail-value">${isAdmin ? `<span style="color:var(--green);font-weight:700;font-size:15px">$</span><input type="number" id="editAmount" value="${l.amount||''}" placeholder="0" onchange="markPipelineDirty()" style="width:100px;padding:4px 8px;border:1px solid var(--beige);border-radius:6px;font-size:14px;font-weight:700;color:var(--green)">` : (l.amount ? `<span style="color:var(--green);font-weight:700">$${Number(l.amount).toLocaleString()}</span>` : '-')}</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-label">Close Probability</span>
-      <span class="detail-value">${isAdmin ? `<select id="editProb" onchange="markPipelineDirty()" style="padding:4px 8px;border:1px solid var(--beige);border-radius:6px;font-size:13px;background:white">
-        ${[5,10,20,30,35,40,50,60,70,80,90,100].map(p => `<option value="${p/100}" ${Math.round((l.prob||0)*100)===p?'selected':''}>${p}%</option>`).join('')}
-      </select>` : (l.prob ? `${Math.round(l.prob*100)}%` : '-')}</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-label">Stage</span>
-      <span class="detail-value">${isAdmin ? `<select id="editStage" onchange="markPipelineDirty()" style="padding:4px 8px;border:1px solid var(--beige);border-radius:6px;font-size:13px;background:white">
-        ${['Contact Received','Responder Sent','Qualifying - Confirming','Qualifying - Confirmed','Nurture - Organic','Nurture - Ad','Call Invite Sent','Call Booked','Call Done - Follow Up','Call Done - Closed'].map(s => `<option value="${s}" ${getStage(l)===s?'selected':''}>${s}</option>`).join('')}
-      </select>` : getStage(l)}</span>
-    </div>
-    ${l.amount && l.prob ? `<div class="detail-row"><span class="detail-label">Weighted Revenue</span><span class="detail-value">$${Math.round(l.amount*l.prob).toLocaleString()}</span></div>` : ''}
-    <div id="pipelineSaveRow" style="display:none;margin-top:12px">
-      <button class="btn btn-primary btn-sm" onclick="savePipelineEdits('${l.id||l.ig||l.name}')">Save Changes</button>
+    <h3>Source & Attribution</h3>
+    <div class="detail-row"><span class="detail-label">Lead Source</span><span class="detail-value">${sel('editSource', sources, getSource(l))}</span></div>
+    <div class="detail-row"><span class="detail-label">First Touch</span><span class="detail-value">${sel('editFirstTouch', touches, l.firstTouch)}</span></div>
+    <div class="detail-row"><span class="detail-label">Content Piece</span><span class="detail-value">${inp('editContent', l.content, 'Which post/reel/ad')}</span></div>
+    <div class="detail-row"><span class="detail-label">First Contact</span><span class="detail-value">${inp('editFirstContact', (getDate(l)||''), 'MM/DD/YYYY', '')}</span></div>
+    <div class="detail-row"><span class="detail-label">Referrer</span><span class="detail-value">${inp('editReferrer', l.referrer, 'Referring client name')}</span></div>
+  </div>`;
+
+  // ── Client Avatar
+  html += `<div class="detail-section">
+    <h3>Client Avatar</h3>
+    <div class="detail-row"><span class="detail-label">Age Range</span><span class="detail-value">${sel('editAge', ages, l.ageRange)}</span></div>
+    <div class="detail-row"><span class="detail-label">Gender</span><span class="detail-value">${sel('editGender', genders, l.gender)}</span></div>
+    <div class="detail-row"><span class="detail-label">Primary Goal</span><span class="detail-value">${sel('editGoal', goals, getGoal(l))}</span></div>
+    <div class="detail-row"><span class="detail-label">Pain Points</span><span class="detail-value">${ta('editPain', l.painPoints||l.pain, 'Their struggles and challenges')}</span></div>
+    <div class="detail-row"><span class="detail-label">Fitness Level</span><span class="detail-value">${sel('editFitness', levels, l.fitnessLevel)}</span></div>
+    <div class="detail-row"><span class="detail-label">Dietary Prefs</span><span class="detail-value">${inp('editDiet', l.dietaryPrefs, 'Dietary preferences')}</span></div>
+  </div>`;
+
+  // ── Pipeline & Revenue
+  html += `<div class="detail-section">
+    <h3>Pipeline & Revenue</h3>
+    <div class="detail-row"><span class="detail-label">Stage</span><span class="detail-value">${sel('editStage', stages, getStage(l))}</span></div>
+    <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${sel('editStatus', statuses, getStatus(l))}</span></div>
+    <div class="detail-row"><span class="detail-label">Temperature</span><span class="detail-value">${sel('editTemp', temps, getTemp(l))}</span></div>
+    <div class="detail-row"><span class="detail-label">Is Client</span><span class="detail-value">${sel('editIsClient', ['Yes','No'], l.isClient)}</span></div>
+    <div class="detail-row"><span class="detail-label">Offer Tier</span><span class="detail-value">${sel('editTier', tiers, l.tier)}</span></div>
+    <div class="detail-row"><span class="detail-label">Amount Charged</span><span class="detail-value">${isAdmin ? `<span style="color:var(--green);font-weight:700">$</span><input id="editAmount" type="number" value="${l.amount||''}" placeholder="0" onchange="markPipelineDirty()" style="width:110px;padding:4px 8px;border:1px solid var(--beige);border-radius:6px;font-size:14px;font-weight:700;color:var(--green)" />` : (l.amount ? `$${Number(l.amount).toLocaleString()}` : '-')}</span></div>
+    <div class="detail-row"><span class="detail-label">Close Probability</span><span class="detail-value">${sel('editProb', ['0.05','0.1','0.2','0.3','0.35','0.4','0.5','0.6','0.7','0.8','0.9','1.0'].map(p=>p), String(l.prob||''))}</span></div>
+    ${l.amount && l.prob ? `<div class="detail-row"><span class="detail-label">Weighted Revenue</span><span class="detail-value" style="font-weight:700;color:var(--green)">$${Math.round(l.amount*l.prob).toLocaleString()}</span></div>` : ''}
+  </div>`;
+
+  // ── Objections
+  html += `<div class="detail-section">
+    <h3>Objections</h3>
+    <div class="detail-row"><span class="detail-label">Objection Type</span><span class="detail-value">${sel('editObjection', objections, getObjection(l))}</span></div>
+    <div class="detail-row"><span class="detail-label">Objection Notes</span><span class="detail-value">${ta('editObjNotes', l.objectionNotes, 'Details about objection')}</span></div>
+  </div>`;
+
+  // ── Next Steps
+  html += `<div class="detail-section">
+    <h3>Next Steps</h3>
+    <div class="detail-row"><span class="detail-label">Next Action</span><span class="detail-value">${ta('editNextAction', getNextAction(l), 'What to do next')}</span></div>
+    <div class="detail-row"><span class="detail-label">Follow-up Date</span><span class="detail-value">${inp('editFollowUp', (getFollowUp(l)||''), 'YYYY-MM-DD')}</span></div>
+  </div>`;
+
+  // ── Notes & History
+  html += `<div class="detail-section">
+    <h3>Notes & History</h3>
+    <div class="detail-row"><span class="detail-label">Last Interaction</span><span class="detail-value">${ta('editLastInteraction', l.lastInteraction, 'Summary of last touchpoint')}</span></div>
+    <div class="detail-row"><span class="detail-label">Notes</span><span class="detail-value">${ta('editNotes', l.notes, 'General notes')}</span></div>
+  </div>`;
+
+  // ── IG Profile
+  html += `<div class="detail-section">
+    <h3>Instagram Profile</h3>
+    ${l.followers ? `<div class="detail-row"><span class="detail-label">Followers</span><span class="detail-value">${Number(l.followers).toLocaleString()}</span></div>` : ''}
+    ${l.bio ? `<div class="detail-row"><span class="detail-label">Bio</span><span class="detail-value" style="text-align:left;max-width:100%">${l.bio}</span></div>` : ''}
+    <div class="detail-row"><span class="detail-label">Engagement Score</span><span class="detail-value">${l.engagementScore||'-'}</span></div>
+    <div class="detail-row"><span class="detail-label">DM Response Rate</span><span class="detail-value">${l.dmResponseRate ? Math.round(l.dmResponseRate*100)+'%' : '-'}</span></div>
+    <div class="detail-row"><span class="detail-label">Content Interactions</span><span class="detail-value">${l.contentInteractions||'-'}</span></div>
+  </div>`;
+
+  // ── Save Button (admin only)
+  if (isAdmin) {
+    html += `<div id="pipelineSaveRow" style="display:none;padding:16px;background:var(--beige-light);border-radius:10px;margin-top:8px;text-align:center">
+      <button class="btn btn-primary" onclick="saveAllEdits('${leadKey.replace(/'/g,"\\'")}')">Save All Changes</button>
       <span id="saveStatus" style="margin-left:10px;font-size:12px;color:var(--text-muted)"></span>
-    </div>
-  </div>`;
-
-  // IG Profile Data
-  if (l.bio || l.followers) {
-    html += `<div class="detail-section">
-      <h3>Instagram Profile</h3>
-      ${l.followers ? `<div class="detail-row"><span class="detail-label">Followers</span><span class="detail-value">${Number(l.followers).toLocaleString()}</span></div>` : ''}
-      ${l.bio ? `<div class="detail-row"><span class="detail-label">Bio</span><span class="detail-value" style="text-align:left;max-width:100%">${l.bio}</span></div>` : ''}
     </div>`;
   }
 
-  // Next Steps & Follow-up
-  if (getNextAction(l) || getFollowUp(l)) {
-    html += `<div class="detail-section">
-      <h3>Next Steps</h3>
-      ${getNextAction(l) ? `<div class="detail-row"><span class="detail-label">Next Action</span><span class="detail-value">${getNextAction(l)}</span></div>` : ''}
-      ${getFollowUp(l) ? `<div class="detail-row"><span class="detail-label">Follow-up Date</span><span class="detail-value">${getFollowUp(l)}</span></div>` : ''}
-    </div>`;
-  }
-
-  // Notes / Last Summary
-  const noteText = getNotes(l);
-  if (noteText) {
-    html += `<div class="detail-section">
-      <h3>${l.lastSummary ? 'Last Interaction' : 'Notes'}</h3>
-      <p style="font-size:13px;line-height:1.6">${noteText}</p>
-    </div>`;
-  }
-
-  // Check for DM draft
+  // ── DM Draft
   const nameSearch = getName(l) || '___NOMATCH___';
   const igSearch = igClean || '___NOMATCH___';
   const draftMatch = allDrafts.find(d => (nameSearch !== '___NOMATCH___' && d.name.includes(nameSearch)) || (igSearch !== '___NOMATCH___' && d.name.includes(igSearch)));
@@ -1172,7 +1185,7 @@ function openDetail(index) {
     </div>`;
   }
 
-  // Actions
+  // ── Actions
   if (igClean) {
     html += `<div class="detail-section">
       <h3>Actions</h3>
@@ -1198,17 +1211,52 @@ function markPipelineDirty() {
   if (row) row.style.display = 'flex';
 }
 
-function savePipelineEdits(leadId) {
-  const amount = document.getElementById('editAmount') ? parseFloat(document.getElementById('editAmount').value) || 0 : null;
-  const prob = document.getElementById('editProb') ? parseFloat(document.getElementById('editProb').value) || 0 : null;
-  const tier = document.getElementById('editTier') ? document.getElementById('editTier').value : null;
-  const stage = document.getElementById('editStage') ? document.getElementById('editStage').value : null;
-
+function saveAllEdits(leadId) {
+  const g = id => { const el = document.getElementById(id); return el ? el.value : null; };
   const updates = {};
-  if (amount !== null) updates.amount = amount;
-  if (prob !== null) updates.prob = prob;
-  if (tier !== null) updates.tier = tier;
-  if (stage !== null) updates.stage = stage;
+
+  // Identity
+  if (g('editName') !== null) updates.name = g('editName');
+  if (g('editIG') !== null) updates.ig = g('editIG');
+  if (g('editEmail') !== null) updates.email = g('editEmail');
+  if (g('editPhone') !== null) updates.phone = g('editPhone');
+  if (g('editLocation') !== null) updates.location = g('editLocation');
+
+  // Source
+  if (g('editSource') !== null) updates.source = g('editSource');
+  if (g('editFirstTouch') !== null) updates.firstTouch = g('editFirstTouch');
+  if (g('editContent') !== null) updates.content = g('editContent');
+  if (g('editFirstContact') !== null) updates.firstContactDate = g('editFirstContact');
+  if (g('editReferrer') !== null) updates.referrer = g('editReferrer');
+
+  // Avatar
+  if (g('editAge') !== null) updates.ageRange = g('editAge');
+  if (g('editGender') !== null) updates.gender = g('editGender');
+  if (g('editGoal') !== null) updates.goal = g('editGoal');
+  if (g('editPain') !== null) updates.painPoints = g('editPain');
+  if (g('editFitness') !== null) updates.fitnessLevel = g('editFitness');
+  if (g('editDiet') !== null) updates.dietaryPrefs = g('editDiet');
+
+  // Pipeline
+  if (g('editStage') !== null) updates.stage = g('editStage');
+  if (g('editStatus') !== null) updates.status = g('editStatus');
+  if (g('editTemp') !== null) updates.temp = g('editTemp');
+  if (g('editIsClient') !== null) updates.isClient = g('editIsClient');
+  if (g('editTier') !== null) updates.tier = g('editTier');
+  if (g('editAmount') !== null) updates.amount = parseFloat(g('editAmount')) || 0;
+  if (g('editProb') !== null) updates.prob = parseFloat(g('editProb')) || 0;
+
+  // Objections
+  if (g('editObjection') !== null) updates.objection = g('editObjection');
+  if (g('editObjNotes') !== null) updates.objectionNotes = g('editObjNotes');
+
+  // Next Steps
+  if (g('editNextAction') !== null) updates.nextAction = g('editNextAction');
+  if (g('editFollowUp') !== null) updates.followUpDate = g('editFollowUp');
+
+  // Notes
+  if (g('editLastInteraction') !== null) updates.lastInteraction = g('editLastInteraction');
+  if (g('editNotes') !== null) updates.notes = g('editNotes');
 
   const statusEl = document.getElementById('saveStatus');
   statusEl.textContent = 'Saving...';
@@ -1224,16 +1272,9 @@ function savePipelineEdits(leadId) {
     if (data.success) {
       statusEl.textContent = 'Saved!';
       statusEl.style.color = 'var(--green)';
-      // Update local data too
       const lead = allLeads.find(l => l.id === leadId || l.ig === leadId || l.name === leadId);
-      if (lead) {
-        Object.assign(lead, updates);
-      }
-      // Refresh dashboard after a beat
-      setTimeout(() => {
-        renderDashboard();
-        renderCRM();
-      }, 500);
+      if (lead) Object.assign(lead, updates);
+      setTimeout(() => { renderDashboard(); renderCRM(); }, 500);
     } else {
       statusEl.textContent = 'Error: ' + (data.error || 'Unknown');
       statusEl.style.color = 'var(--red)';
@@ -1244,6 +1285,9 @@ function savePipelineEdits(leadId) {
     statusEl.style.color = 'var(--red)';
   });
 }
+
+// Keep backward compat
+function savePipelineEdits(leadId) { saveAllEdits(leadId); }
 
 // ═══ Notifications ═══
 function renderNotifications() {
