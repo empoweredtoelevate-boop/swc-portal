@@ -366,7 +366,7 @@
   }
 </style>
 </head>
-<body>
+<body data-role="{{ session.get('role', 'viewer') }}">
 
 <!-- Top Bar -->
 <div class="topbar">
@@ -1094,16 +1094,44 @@ function openDetail(index) {
     </div>`;
   }
 
-  // Pipeline & Revenue
-  if (l.tier || l.amount || l.prob) {
-    html += `<div class="detail-section">
-      <h3>Pipeline</h3>
-      ${l.tier ? `<div class="detail-row"><span class="detail-label">Offer Tier</span><span class="detail-value">${l.tier}</span></div>` : ''}
-      ${l.amount ? `<div class="detail-row"><span class="detail-label">Amount</span><span class="detail-value" style="color:var(--green);font-weight:700">$${Number(l.amount).toLocaleString()}</span></div>` : ''}
-      ${l.prob ? `<div class="detail-row"><span class="detail-label">Close Probability</span><span class="detail-value">${Math.round(l.prob*100)}%</span></div>` : ''}
-      ${l.amount && l.prob ? `<div class="detail-row"><span class="detail-label">Weighted Revenue</span><span class="detail-value">$${Math.round(l.amount*l.prob).toLocaleString()}</span></div>` : ''}
-    </div>`;
-  }
+  // Pipeline & Revenue (editable for admin)
+  const isClosed = getStage(l).includes('Closed');
+  const isAdmin = document.body.dataset.role === 'admin';
+  html += `<div class="detail-section">
+    <h3>Pipeline</h3>
+    <div class="detail-row">
+      <span class="detail-label">Offer Tier</span>
+      <span class="detail-value">${isAdmin ? `<select id="editTier" onchange="markPipelineDirty()" style="padding:4px 8px;border:1px solid var(--beige);border-radius:6px;font-size:13px;background:white">
+        <option value="">-- Select --</option>
+        <option value="Discovery Package $500" ${l.tier==='Discovery Package $500'?'selected':''}>Discovery Package $500</option>
+        <option value="Group Coaching $1500" ${l.tier==='Group Coaching $1500'?'selected':''}>Group Coaching $1,500</option>
+        <option value="1:1 Coaching $3000" ${l.tier==='1:1 Coaching $3000'?'selected':''}>1:1 Coaching $3,000</option>
+        <option value="1:1 Coaching 6mo $499/mo" ${l.tier==='1:1 Coaching 6mo $499/mo'?'selected':''}>1:1 Coaching 6mo $499/mo ($2,994)</option>
+        <option value="VIP Intensive $5000" ${l.tier==='VIP Intensive $5000'?'selected':''}>VIP Intensive $5,000+</option>
+      </select>` : (l.tier || '-')}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Amount Charged</span>
+      <span class="detail-value">${isAdmin ? `<span style="color:var(--green);font-weight:700;font-size:15px">$</span><input type="number" id="editAmount" value="${l.amount||''}" placeholder="0" onchange="markPipelineDirty()" style="width:100px;padding:4px 8px;border:1px solid var(--beige);border-radius:6px;font-size:14px;font-weight:700;color:var(--green)">` : (l.amount ? `<span style="color:var(--green);font-weight:700">$${Number(l.amount).toLocaleString()}</span>` : '-')}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Close Probability</span>
+      <span class="detail-value">${isAdmin ? `<select id="editProb" onchange="markPipelineDirty()" style="padding:4px 8px;border:1px solid var(--beige);border-radius:6px;font-size:13px;background:white">
+        ${[5,10,20,30,35,40,50,60,70,80,90,100].map(p => `<option value="${p/100}" ${Math.round((l.prob||0)*100)===p?'selected':''}>${p}%</option>`).join('')}
+      </select>` : (l.prob ? `${Math.round(l.prob*100)}%` : '-')}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Stage</span>
+      <span class="detail-value">${isAdmin ? `<select id="editStage" onchange="markPipelineDirty()" style="padding:4px 8px;border:1px solid var(--beige);border-radius:6px;font-size:13px;background:white">
+        ${['Contact Received','Responder Sent','Qualifying - Confirming','Qualifying - Confirmed','Nurture - Organic','Nurture - Ad','Call Invite Sent','Call Booked','Call Done - Follow Up','Call Done - Closed'].map(s => `<option value="${s}" ${getStage(l)===s?'selected':''}>${s}</option>`).join('')}
+      </select>` : getStage(l)}</span>
+    </div>
+    ${l.amount && l.prob ? `<div class="detail-row"><span class="detail-label">Weighted Revenue</span><span class="detail-value">$${Math.round(l.amount*l.prob).toLocaleString()}</span></div>` : ''}
+    <div id="pipelineSaveRow" style="display:none;margin-top:12px">
+      <button class="btn btn-primary btn-sm" onclick="savePipelineEdits('${l.id||l.ig||l.name}')">Save Changes</button>
+      <span id="saveStatus" style="margin-left:10px;font-size:12px;color:var(--text-muted)"></span>
+    </div>
+  </div>`;
 
   // IG Profile Data
   if (l.bio || l.followers) {
@@ -1163,6 +1191,58 @@ function openDetail(index) {
 function closeDetail() {
   document.getElementById('detailPanel').classList.remove('open');
   document.getElementById('detailOverlay').classList.remove('open');
+}
+
+function markPipelineDirty() {
+  const row = document.getElementById('pipelineSaveRow');
+  if (row) row.style.display = 'flex';
+}
+
+function savePipelineEdits(leadId) {
+  const amount = document.getElementById('editAmount') ? parseFloat(document.getElementById('editAmount').value) || 0 : null;
+  const prob = document.getElementById('editProb') ? parseFloat(document.getElementById('editProb').value) || 0 : null;
+  const tier = document.getElementById('editTier') ? document.getElementById('editTier').value : null;
+  const stage = document.getElementById('editStage') ? document.getElementById('editStage').value : null;
+
+  const updates = {};
+  if (amount !== null) updates.amount = amount;
+  if (prob !== null) updates.prob = prob;
+  if (tier !== null) updates.tier = tier;
+  if (stage !== null) updates.stage = stage;
+
+  const statusEl = document.getElementById('saveStatus');
+  statusEl.textContent = 'Saving...';
+  statusEl.style.color = 'var(--text-muted)';
+
+  fetch('/api/lead/update', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({id: leadId, updates: updates})
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      statusEl.textContent = 'Saved!';
+      statusEl.style.color = 'var(--green)';
+      // Update local data too
+      const lead = allLeads.find(l => l.id === leadId || l.ig === leadId || l.name === leadId);
+      if (lead) {
+        Object.assign(lead, updates);
+      }
+      // Refresh dashboard after a beat
+      setTimeout(() => {
+        renderDashboard();
+        renderCRM();
+      }, 500);
+    } else {
+      statusEl.textContent = 'Error: ' + (data.error || 'Unknown');
+      statusEl.style.color = 'var(--red)';
+    }
+  })
+  .catch(err => {
+    statusEl.textContent = 'Network error';
+    statusEl.style.color = 'var(--red)';
+  });
 }
 
 // ═══ Notifications ═══

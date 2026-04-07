@@ -177,6 +177,58 @@ def api_crm_data():
     return jsonify({})
 
 
+# ─── API: Lead Update ───
+
+@app.route('/api/lead/update', methods=['POST'])
+@login_required
+def api_lead_update():
+    """Update a lead's fields (amount, tier, stage, etc). Admin only."""
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Admin only'}), 403
+
+    payload = request.get_json()
+    lead_id = payload.get('id')
+    updates = payload.get('updates', {})
+
+    if not lead_id or not updates:
+        return jsonify({'error': 'Missing id or updates'}), 400
+
+    js_path = os.path.join(BASE_DIR, 'dashboard_data.js')
+    if not os.path.exists(js_path):
+        return jsonify({'error': 'CRM data not found'}), 404
+
+    with open(js_path) as f:
+        content = f.read()
+
+    idx = content.find('{')
+    data_str = content[idx:].rstrip().rstrip(';')
+    data = json.loads(data_str)
+
+    updated = False
+    for lead in data.get('leads', []):
+        if lead.get('id') == lead_id or lead.get('ig') == lead_id or lead.get('name') == lead_id:
+            for key, val in updates.items():
+                lead[key] = val
+            updated = True
+            break
+
+    if not updated:
+        return jsonify({'error': 'Lead not found'}), 404
+
+    # Recalculate totals
+    from collections import Counter
+    leads = data['leads']
+    data['totalLeads'] = len(leads)
+    data['stages'] = dict(Counter(l.get('stage', '') for l in leads))
+    data['sources'] = dict(Counter(l.get('source', '') for l in leads))
+    data['temps'] = dict(Counter(l.get('temp', '') for l in leads))
+
+    with open(js_path, 'w') as f:
+        f.write('window.CRM_DATA = ' + json.dumps(data, default=str, ensure_ascii=False) + ';')
+
+    return jsonify({'success': True, 'lead_id': lead_id})
+
+
 # ─── API: Agent Hub ───
 
 @app.route('/api/agent/queue')
